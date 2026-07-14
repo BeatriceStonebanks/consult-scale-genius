@@ -744,16 +744,6 @@ function Lever({
           {format(value)}
         </span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={label}
-        className="peer sr-only"
-      />
       <div className="h-1 rounded-full bg-zinc-200">
         <div
           className={"h-full rounded-full " + (active ? "bg-brand" : "bg-zinc-400")}

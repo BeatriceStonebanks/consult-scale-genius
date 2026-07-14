@@ -2,6 +2,13 @@
 @source "../src";
 @import "tw-animate-css";
 
+@theme {
+  --color-brand: #166534;
+  --color-brand-light: #f0fdf4;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*

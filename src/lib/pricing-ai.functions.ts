@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { setResponseHeaders } from "@tanstack/react-start/server";
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider, getLovableAiGatewayResponseHeaders } from "./pricing-ai.server";
@@ -31,6 +32,10 @@ const SuggestPackagesInputSchema = z.object({
 export type SuggestedPackage = z.infer<typeof PackageSuggestionSchema>;
 export type SuggestPackagesResult = z.infer<typeof SuggestPackagesOutputSchema>;
 
+export type SuggestPackagesResponse =
+  | { ok: true; output: SuggestPackagesResult }
+  | { ok: false; error: string };
+
 export const suggestPackages = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SuggestPackagesInputSchema.parse(input))
   .handler(async ({ data }) => {
@@ -51,16 +56,11 @@ export const suggestPackages = createServerFn({ method: "POST" })
         prompt,
       });
 
-      return Response.json(
-        { output },
-        { headers: getLovableAiGatewayResponseHeaders(response.headers) },
-      );
+      setResponseHeaders(getLovableAiGatewayResponseHeaders(response.headers));
+      return { ok: true as const, output };
     } catch (error) {
       if (NoObjectGeneratedError.isInstance(error)) {
-        return Response.json(
-          { output: null, error: "Could not generate a valid package design. Please try again." },
-          { status: 422 },
-        );
+        return { ok: false as const, error: "Could not generate a valid package design. Please try again." };
       }
       throw error;
     }

@@ -1,31 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { suggestPackages, type SuggestedPackage, type SuggestPackagesResult } from "@/lib/pricing-ai.functions";
-import { checkUnlocked } from "@/lib/gate.functions";
 
 
 export const Route = createFileRoute("/")({
-  beforeLoad: async () => {
-    const { unlocked } = await checkUnlocked();
-    if (!unlocked) throw redirect({ to: "/unlock" });
-  },
-  head: () => ({
-    meta: [
-      { title: "Equator — Fractional Pricing Calculator" },
-      {
-        name: "description",
-        content: "A private calculator for converting FTE compensation into fractional consulting rates, retainers, packages, and project estimates.",
-      },
-      { property: "og:title", content: "Equator — Fractional Pricing Calculator" },
-      {
-        property: "og:description",
-        content: "Convert full-time compensation into fractional consulting rates, retainers, packages, and project estimates.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
   component: Calculator,
 });
 

@@ -1,49 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
-import { useSession } from "@tanstack/react-start/server";
-import { createHash, timingSafeEqual } from "node:crypto";
-
-type GateSession = { unlocked?: boolean };
-
-const sessionConfig = {
-  get password() {
-    return process.env.SESSION_SECRET!;
-  },
-  name: "site-gate",
-  maxAge: 60 * 60 * 24 * 7,
-  cookie: {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax" as const,
-    path: "/",
-  },
-};
-
-function passwordMatches(input: string, expected: string): boolean {
-  const a = createHash("sha256").update(input, "utf8").digest();
-  const b = createHash("sha256").update(expected, "utf8").digest();
-  return timingSafeEqual(a, b);
-}
+import { clearGate, getGateUnlocked, unlockGate } from "./gate.server";
 
 export const checkUnlocked = createServerFn({ method: "GET" }).handler(async () => {
-  const session = await useSession<GateSession>(sessionConfig);
-  return { unlocked: Boolean(session.data.unlocked) };
+  return { unlocked: await getGateUnlocked() };
 });
 
 export const unlockSite = createServerFn({ method: "POST" })
-  .inputValidator((data: { password: string }) => data)
+  .validator((data: { password: string }) => data)
   .handler(async ({ data }) => {
-    const expected = process.env.SITE_PASSWORD;
-    if (!expected) throw new Error("SITE_PASSWORD is not set");
-    if (!passwordMatches(data.password, expected)) {
-      return { ok: false as const };
-    }
-    const session = await useSession<GateSession>(sessionConfig);
-    await session.update({ unlocked: true });
-    return { ok: true as const };
+    return { ok: await unlockGate(data.password) };
   });
 
 export const lockSite = createServerFn({ method: "POST" }).handler(async () => {
-  const session = await useSession<GateSession>(sessionConfig);
-  await session.clear();
+  await clearGate();
   return { ok: true as const };
 });

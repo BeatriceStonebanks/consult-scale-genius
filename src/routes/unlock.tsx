@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { unlockSite, checkUnlocked } from "@/lib/gate.functions";
+import { checkUnlocked } from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/unlock")({
+  validateSearch: (search) => ({
+    error: search.error === "1",
+  }),
   beforeLoad: async () => {
     const { unlocked } = await checkUnlocked();
     if (unlocked) throw redirect({ to: "/" });
@@ -12,6 +13,10 @@ export const Route = createFileRoute("/unlock")({
     meta: [
       { title: "Enter password — Equator" },
       { name: "description", content: "Private access." },
+      { property: "og:title", content: "Enter password — Equator" },
+      { property: "og:description", content: "Private access." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
@@ -19,28 +24,7 @@ export const Route = createFileRoute("/unlock")({
 });
 
 function Unlock() {
-  const unlock = useServerFn(unlockSite);
-  const [error, setError] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setPending(true);
-    setError(false);
-    const password = new FormData(e.currentTarget).get("password") as string;
-    try {
-      const { ok } = await unlock({ data: { password } });
-      if (ok) {
-        window.location.href = "/";
-        return;
-      }
-      setError(true);
-    } catch {
-      setError(true);
-    } finally {
-      setPending(false);
-    }
-  }
+  const { error } = Route.useSearch();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -51,7 +35,7 @@ function Unlock() {
             This calculator is private. Enter the access password to continue.
           </p>
         </div>
-        <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-border bg-card p-6 shadow-sm">
+        <form method="post" action="/api/public/unlock" className="space-y-3 rounded-xl border border-border bg-card p-6 shadow-sm">
           <label htmlFor="password" className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Access password
           </label>
@@ -69,10 +53,9 @@ function Unlock() {
           )}
           <button
             type="submit"
-            disabled={pending}
             className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
-            {pending ? "Checking…" : "Enter"}
+            Enter
           </button>
         </form>
       </div>

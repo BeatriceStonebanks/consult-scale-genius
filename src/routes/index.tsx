@@ -136,6 +136,14 @@ function Calculator() {
   const [projectHours, setProjectHours] = useState<number>(40);
   const [riskBuffer, setRiskBuffer] = useState<number>(0.15);
 
+  const [packageGoal, setPackageGoal] = useState<string>("");
+  const [aiPackages, setAiPackages] = useState<SuggestPackagesResult | null>(null);
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const suggestPackagesFn = useServerFn(suggestPackages);
+
+
   const jdEst = useMemo(() => estimateFromJD(jdText), [jdText]);
 
   const baseline = useMemo(() => {

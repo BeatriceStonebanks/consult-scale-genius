@@ -690,6 +690,30 @@ function MiniStat({ label, value, tone }: { label: string; value: string; tone: 
   );
 }
 
+function LockButton() {
+  const router = useRouter();
+  const lock = useServerFn(lockSite);
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await lock();
+          await router.navigate({ to: "/unlock" });
+          router.invalidate();
+        } finally {
+          setBusy(false);
+        }
+      }}
+      disabled={busy}
+      className="ml-2 rounded-md border border-navy/15 px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-navy hover:text-ivory disabled:opacity-50"
+    >
+      {busy ? "Locking…" : "Lock"}
+    </button>
+  );
+}
+
 function SectionHeader({ eyebrow, title, compact }: { eyebrow: string; title: string; compact?: boolean }) {
   return (
     <div className={compact ? "" : "mb-3"}>

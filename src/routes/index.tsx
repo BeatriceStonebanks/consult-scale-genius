@@ -271,6 +271,7 @@ function Calculator() {
           <nav className="hidden items-center gap-1 md:flex">
             <a href="#calculator" className="rounded-md px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-mint hover:text-navy">Calculator</a>
             <a href="#methodology" className="rounded-md px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-mint hover:text-navy">Methodology</a>
+            <LockButton />
           </nav>
         </div>
       </header>

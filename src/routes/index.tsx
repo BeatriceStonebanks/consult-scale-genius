@@ -811,3 +811,57 @@ function Lever({
     </div>
   );
 }
+
+function SparkleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+    </svg>
+  );
+}
+
+function AiPackageCard({ pkg }: { pkg: SuggestedPackage }) {
+  return (
+    <div className="flex flex-col justify-between rounded-2xl border border-navy/10 bg-ivory-deep/50 p-5">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="size-1.5 rounded-full bg-brand" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand">{pkg.name}</span>
+        </div>
+        <div className="mt-1 text-xs text-navy/60">{pkg.cadence}</div>
+        <div className="mt-4">
+          <span className="font-mono text-2xl font-bold tabular-nums text-navy">{fmtUSD(pkg.monthlyFee)}</span>
+          <span className="text-xs text-navy/50"> /mo</span>
+        </div>
+        <div className="mt-3 space-y-1 text-[11px] text-navy/60">
+          <div className="flex justify-between">
+            <span>Days/mo</span>
+            <span className="font-mono font-semibold text-navy">{pkg.daysPerMonth}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Hours/mo</span>
+            <span className="font-mono font-semibold text-navy">{pkg.hoursPerMonth}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Annualized</span>
+            <span className="font-mono font-semibold text-navy">{fmtUSD(pkg.annualizedFee)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        <p className="text-[11px] leading-relaxed text-navy/70">
+          <span className="font-semibold text-navy">Rationale:</span> {pkg.rationale}
+        </p>
+        <p className="text-[11px] leading-relaxed text-navy/70">
+          <span className="font-semibold text-navy">Ideal for:</span> {pkg.idealFor}
+        </p>
+      </div>
+    </div>
+  );
+}
+

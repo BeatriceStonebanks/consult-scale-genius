@@ -95,7 +95,6 @@ const fmtRange = (lo: number, hi: number) => `${fmtUSD(lo)} – ${fmtUSD(hi)}`;
 type InputMode = "title" | "jd" | "manual";
 type RateModel = "simple" | "advanced";
 
-// Simple-mode fixed assumptions
 const SIMPLE = {
   utilization: 0.7,
   benefitsLoad: 0.25,
@@ -104,7 +103,6 @@ const SIMPLE = {
   billableWeeks: 46,
 };
 
-// Band around midpoint hourly
 const BAND_LO = 0.9;
 const BAND_HI = 1.15;
 
@@ -115,7 +113,6 @@ function Calculator() {
   const [role, setRole] = useState<string>("VP Marketing");
   const [location, setLocation] = useState<LocationTier>("sf");
 
-  // Manual comp split
   const [salary, setSalary] = useState<number>(180000);
   const [bonus, setBonus] = useState<number>(25000);
   const [equity, setEquity] = useState<number>(15000);
@@ -123,26 +120,21 @@ function Calculator() {
 
   const [jdText, setJdText] = useState<string>("");
 
-  // Advanced levers (seeded from simple defaults)
   const [utilization, setUtilization] = useState(SIMPLE.utilization);
   const [benefitsLoad, setBenefitsLoad] = useState(SIMPLE.benefitsLoad);
   const [overhead, setOverhead] = useState(SIMPLE.overhead);
   const [margin, setMargin] = useState(SIMPLE.margin);
   const [billableWeeks, setBillableWeeks] = useState(SIMPLE.billableWeeks);
 
-  // Effective assumptions depend on rate model
   const eff = rateModel === "simple" ? SIMPLE : {
     utilization, benefitsLoad, overhead, margin, billableWeeks,
   };
 
-  // Project estimator
   const [projectHours, setProjectHours] = useState<number>(40);
   const [riskBuffer, setRiskBuffer] = useState<number>(0.15);
 
-  // JD extraction (used both for baseline and for the visible chips)
   const jdEst = useMemo(() => estimateFromJD(jdText), [jdText]);
 
-  // ---------- Derived FTE baseline ----------
   const baseline = useMemo(() => {
     if (mode === "title") {
       const match = ROLE_BASELINE.find(
@@ -162,7 +154,6 @@ function Calculator() {
     };
   }, [mode, role, location, manualComp, jdEst]);
 
-  // ---------- Rate math ----------
   const rates = useMemo(() => {
     const comp = baseline.comp;
     const loadedAnnual = comp * (1 + eff.benefitsLoad);
@@ -186,7 +177,6 @@ function Calculator() {
     const monthlyLo = weeklyLo * 4;
     const monthlyHi = weeklyHi * 4;
 
-    // Retainer midpoints + bands
     const mkPkg = (days: number, disc: number) => {
       const mid = round100(daily * days * disc);
       const lo = round100(dailyLo * days * disc);
@@ -206,9 +196,7 @@ function Calculator() {
       weekly, weeklyLo, weeklyHi,
       monthly, monthlyLo, monthlyHi,
       oneDay, twoDay, halfFte,
-      loadedAnnual,
-      fteLoadedAnnual,
-      fteLoadedMonthly,
+      loadedAnnual, fteLoadedAnnual, fteLoadedMonthly,
     };
   }, [baseline.comp, eff.benefitsLoad, eff.utilization, eff.margin, eff.overhead, eff.billableWeeks]);
 
@@ -225,198 +213,154 @@ function Calculator() {
   const hasBaseline = baseline.comp > 0;
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 selection:bg-brand/10">
+    <div className="min-h-screen bg-background font-sans text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-zinc-950/5 bg-zinc-50/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex size-6 items-center justify-center rounded-sm bg-brand">
-              <div className="size-2 rounded-full bg-zinc-50" />
+      <header className="sticky top-0 z-20 border-b border-navy/10 bg-ivory/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-brand shadow-sm">
+              <div className="size-3 rounded-full bg-ivory" />
             </div>
-            <span className="text-sm font-medium tracking-tight">Equator</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-heading text-base font-extrabold tracking-tight text-navy">Equator</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-rose">Fractional pricing</span>
+            </div>
           </div>
-          <nav className="hidden items-center gap-6 md:flex">
-            <a href="#calculator" className="text-sm text-zinc-500 transition-colors hover:text-zinc-900">
-              Calculator
-            </a>
-            <a href="#methodology" className="text-sm text-zinc-500 transition-colors hover:text-zinc-900">
-              Methodology
-            </a>
+          <nav className="hidden items-center gap-1 md:flex">
+            <a href="#calculator" className="rounded-md px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-mint hover:text-navy">Calculator</a>
+            <a href="#methodology" className="rounded-md px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-mint hover:text-navy">Methodology</a>
           </nav>
         </div>
       </header>
 
-      <main id="calculator" className="mx-auto max-w-7xl px-6 py-12">
-        <div className="grid grid-cols-12 items-start gap-10">
-          {/* ---------- Left: Inputs ---------- */}
-          <aside className="col-span-12 space-y-8 lg:col-span-4">
-            <section>
-              <h1 className="mb-2 text-balance text-xl font-semibold tracking-tight">
-                Rate Calibration
-              </h1>
-              <p className="max-w-[48ch] text-pretty text-sm text-zinc-500">
-                Input your professional baseline to generate defensible fractional pricing models.
-              </p>
-            </section>
+      <main id="calculator" className="mx-auto max-w-[1400px] px-6 py-10">
+        <div className="grid grid-cols-12 items-start gap-8">
+          {/* ---------- Left: Inputs sidebar ---------- */}
+          <aside className="col-span-12 lg:col-span-4 xl:col-span-3">
+            <div className="lg:sticky lg:top-24 space-y-5">
+              <section>
+                <h1 className="font-heading text-2xl font-extrabold leading-tight tracking-tight text-navy">
+                  Rate Calibration
+                </h1>
+                <p className="mt-2 text-sm text-navy/60">
+                  Convert your FTE baseline into defensible fractional pricing.
+                </p>
+              </section>
 
-            <div className="space-y-6">
-              {/* Input Tabs */}
-              <div
-                role="tablist"
-                aria-label="Baseline input mode"
-                className="flex rounded-xl bg-zinc-100/50 p-1 ring-1 ring-black/5"
-              >
-                {(
-                  [
-                    { id: "title", label: "Job Title" },
-                    { id: "jd", label: "Paste JD" },
-                    { id: "manual", label: "Manual Comp" },
-                  ] as const
-                ).map((t) => (
-                  <button
-                    key={t.id}
-                    role="tab"
-                    aria-selected={mode === t.id}
-                    onClick={() => setMode(t.id)}
-                    className={
-                      "flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors " +
-                      (mode === t.id
-                        ? "bg-zinc-50 text-zinc-900 shadow-sm ring-1 ring-black/5"
-                        : "text-zinc-500 hover:text-zinc-900")
-                    }
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-
-              {mode === "title" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium text-zinc-500">
-                      Target Role
-                    </label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full rounded-lg bg-zinc-50 px-3 py-2 text-sm outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
+              {/* Input mode tabs */}
+              <div className="rounded-2xl border border-navy/10 bg-card p-3 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
+                <div className="grid grid-cols-3 gap-1 rounded-xl bg-ivory-deep p-1">
+                  {(
+                    [
+                      { id: "title", label: "Role" },
+                      { id: "jd", label: "JD" },
+                      { id: "manual", label: "Comp" },
+                    ] as const
+                  ).map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setMode(t.id)}
+                      className={
+                        "rounded-lg py-1.5 text-xs font-semibold transition-all " +
+                        (mode === t.id
+                          ? "bg-brand text-white shadow-sm"
+                          : "text-navy/60 hover:text-navy")
+                      }
                     >
-                      {ROLE_BASELINE.map((r) => (
-                        <option key={r.title} value={r.title}>
-                          {r.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium text-zinc-500">
-                      Location Tier
-                    </label>
-                    <select
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value as LocationTier)}
-                      className="w-full rounded-lg bg-zinc-50 px-3 py-2 text-sm outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
-                    >
-                      {(Object.keys(LOCATION_LABELS) as LocationTier[]).map((k) => (
-                        <option key={k} value={k}>
-                          {LOCATION_LABELS[k]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      {t.label}
+                    </button>
+                  ))}
                 </div>
-              )}
 
-              {mode === "jd" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium text-zinc-500">
-                      Paste the full job description
-                    </label>
-                    <textarea
-                      value={jdText}
-                      onChange={(e) => setJdText(e.target.value)}
-                      rows={8}
-                      placeholder="Paste a job description here. We'll infer seniority and role to estimate an FTE baseline."
-                      className="w-full rounded-lg bg-zinc-50 px-3 py-2 text-sm leading-relaxed outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
-                    />
-                    <p className="mt-1.5 text-[11px] text-zinc-400">
-                      Heuristic estimate from title, seniority keywords, and location.
-                    </p>
-                  </div>
-                  {jdEst && (
-                    <div className="flex flex-wrap gap-1.5">
-                      <Chip label="Role" value={jdEst.roleGuess} />
-                      <Chip label="Seniority" value={jdEst.seniority} />
-                      <Chip label="Implied" value={fmtUSD(jdEst.comp)} />
-                    </div>
+                <div className="mt-4 space-y-4">
+                  {mode === "title" && (
+                    <>
+                      <Field label="Target Role">
+                        <select value={role} onChange={(e) => setRole(e.target.value)} className={inputCls}>
+                          {ROLE_BASELINE.map((r) => (
+                            <option key={r.title} value={r.title}>{r.title}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Location Tier">
+                        <select value={location} onChange={(e) => setLocation(e.target.value as LocationTier)} className={inputCls}>
+                          {(Object.keys(LOCATION_LABELS) as LocationTier[]).map((k) => (
+                            <option key={k} value={k}>{LOCATION_LABELS[k]}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    </>
                   )}
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium text-zinc-500">
-                      Location Tier
-                    </label>
-                    <select
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value as LocationTier)}
-                      className="w-full rounded-lg bg-zinc-50 px-3 py-2 text-sm outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
-                    >
-                      {(Object.keys(LOCATION_LABELS) as LocationTier[]).map((k) => (
-                        <option key={k} value={k}>
-                          {LOCATION_LABELS[k]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
 
-              {mode === "manual" && (
-                <div className="space-y-4">
-                  <MoneyField label="Base Salary" value={salary} onChange={setSalary} />
-                  <MoneyField label="Annual Bonus" value={bonus} onChange={setBonus} />
-                  <MoneyField label="Equity (annualized)" value={equity} onChange={setEquity} />
-                  <div className="flex items-baseline justify-between border-t border-zinc-950/5 pt-2">
-                    <span className="text-xs font-medium text-zinc-500">Total Comp</span>
-                    <span className="font-mono text-sm font-medium tabular-nums">
-                      {fmtUSD(manualComp)}
-                    </span>
-                  </div>
-                </div>
-              )}
+                  {mode === "jd" && (
+                    <>
+                      <Field label="Paste job description">
+                        <textarea
+                          value={jdText}
+                          onChange={(e) => setJdText(e.target.value)}
+                          rows={6}
+                          placeholder="Paste JD text — we'll infer role, seniority, and comp."
+                          className={inputCls + " leading-relaxed"}
+                        />
+                      </Field>
+                      {jdEst && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <Chip tone="mint" label="Role" value={jdEst.roleGuess} />
+                          <Chip tone="blush" label="Seniority" value={jdEst.seniority} />
+                          <Chip tone="ivory" label="Implied" value={fmtUSD(jdEst.comp)} />
+                        </div>
+                      )}
+                      <Field label="Location Tier">
+                        <select value={location} onChange={(e) => setLocation(e.target.value as LocationTier)} className={inputCls}>
+                          {(Object.keys(LOCATION_LABELS) as LocationTier[]).map((k) => (
+                            <option key={k} value={k}>{LOCATION_LABELS[k]}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    </>
+                  )}
 
-              {/* Baseline readout */}
-              <div className="rounded-lg bg-brand-light/60 p-3 ring-1 ring-brand/10">
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-brand">
-                  FTE Baseline
+                  {mode === "manual" && (
+                    <>
+                      <MoneyField label="Base Salary" value={salary} onChange={setSalary} />
+                      <MoneyField label="Annual Bonus" value={bonus} onChange={setBonus} />
+                      <MoneyField label="Equity (annualized)" value={equity} onChange={setEquity} />
+                      <div className="flex items-baseline justify-between rounded-lg bg-mint px-3 py-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-navy/70">Total Comp</span>
+                        <span className="font-mono text-sm font-bold tabular-nums text-navy">{fmtUSD(manualComp)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="mt-1 font-mono text-lg font-medium tabular-nums">
-                  {hasBaseline ? fmtUSD(baseline.comp) : "—"}
-                </div>
-                <div className="text-[11px] text-zinc-500">{baseline.source}</div>
               </div>
 
-              {/* Rate model toggle */}
-              <div className="border-t border-zinc-950/5 pt-4">
+              {/* Baseline readout — hero panel */}
+              <div className="relative overflow-hidden rounded-2xl bg-navy p-5 text-white shadow-lg">
+                <div className="absolute -right-8 -top-8 size-32 rounded-full bg-brand/30 blur-2xl" />
+                <div className="relative">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-brand" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand">FTE Baseline</span>
+                  </div>
+                  <div className="mt-2 font-mono text-3xl font-bold tabular-nums">
+                    {hasBaseline ? fmtUSD(baseline.comp) : "—"}
+                  </div>
+                  <div className="mt-1 text-[11px] text-white/60">{baseline.source}</div>
+                </div>
+              </div>
+
+              {/* Rate model */}
+              <div className="rounded-2xl border border-navy/10 bg-card p-4 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Rate Model
-                  </span>
-                  <div
-                    role="tablist"
-                    aria-label="Rate model"
-                    className="flex rounded-md bg-zinc-100/70 p-0.5 ring-1 ring-black/5"
-                  >
+                  <span className="font-heading text-xs font-bold uppercase tracking-wider text-navy">Assumptions</span>
+                  <div className="flex rounded-lg bg-ivory-deep p-0.5">
                     {(["simple", "advanced"] as const).map((m) => (
                       <button
                         key={m}
-                        role="tab"
-                        aria-selected={rateModel === m}
                         onClick={() => setRateModel(m)}
                         className={
-                          "rounded px-2.5 py-1 text-[11px] font-medium capitalize transition-colors " +
-                          (rateModel === m
-                            ? "bg-zinc-50 text-zinc-900 shadow-sm ring-1 ring-black/5"
-                            : "text-zinc-500 hover:text-zinc-900")
+                          "rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all " +
+                          (rateModel === m ? "bg-rose text-white shadow-sm" : "text-navy/60")
                         }
                       >
                         {m}
@@ -426,25 +370,19 @@ function Calculator() {
                 </div>
 
                 {rateModel === "simple" ? (
-                  <p className="text-[11px] leading-relaxed text-zinc-500">
-                    Utilization {Math.round(SIMPLE.utilization * 100)}% ·
-                    Benefits {Math.round(SIMPLE.benefitsLoad * 100)}% ·
-                    Overhead {Math.round(SIMPLE.overhead * 100)}% ·
-                    Margin {SIMPLE.margin.toFixed(2)}× ·
-                    {SIMPLE.billableWeeks} wks
-                  </p>
+                  <ul className="grid grid-cols-2 gap-2 text-[11px]">
+                    <MiniStat label="Utilization" value={`${Math.round(SIMPLE.utilization * 100)}%`} tone="mint" />
+                    <MiniStat label="Benefits" value={`${Math.round(SIMPLE.benefitsLoad * 100)}%`} tone="blush" />
+                    <MiniStat label="Overhead" value={`${Math.round(SIMPLE.overhead * 100)}%`} tone="ivory" />
+                    <MiniStat label="Margin" value={`${SIMPLE.margin.toFixed(2)}×`} tone="mint" />
+                  </ul>
                 ) : (
-                  <div className="space-y-4">
-                    <Lever label="Utilization Rate" value={utilization} onChange={setUtilization}
-                      min={0.3} max={0.9} step={0.05} format={(v) => `${Math.round(v * 100)}%`} />
-                    <Lever label="Benefits & Taxes Load" value={benefitsLoad} onChange={setBenefitsLoad}
-                      min={0.1} max={0.5} step={0.01} format={(v) => `${Math.round(v * 100)}%`} />
-                    <Lever label="Business Overhead" value={overhead} onChange={setOverhead}
-                      min={0} max={0.4} step={0.01} format={(v) => `${Math.round(v * 100)}%`} />
-                    <Lever label="Margin Multiplier" value={margin} onChange={setMargin}
-                      min={1.0} max={2.5} step={0.05} format={(v) => `${v.toFixed(2)}×`} />
-                    <Lever label="Billable Weeks / Year" value={billableWeeks} onChange={setBillableWeeks}
-                      min={30} max={50} step={1} format={(v) => `${v} wks`} />
+                  <div className="space-y-3.5">
+                    <Lever label="Utilization" value={utilization} onChange={setUtilization} min={0.3} max={0.9} step={0.05} format={(v) => `${Math.round(v * 100)}%`} />
+                    <Lever label="Benefits & Taxes" value={benefitsLoad} onChange={setBenefitsLoad} min={0.1} max={0.5} step={0.01} format={(v) => `${Math.round(v * 100)}%`} />
+                    <Lever label="Overhead" value={overhead} onChange={setOverhead} min={0} max={0.4} step={0.01} format={(v) => `${Math.round(v * 100)}%`} />
+                    <Lever label="Margin" value={margin} onChange={setMargin} min={1.0} max={2.5} step={0.05} format={(v) => `${v.toFixed(2)}×`} />
+                    <Lever label="Billable Weeks" value={billableWeeks} onChange={setBillableWeeks} min={30} max={50} step={1} format={(v) => `${v} wks`} />
                   </div>
                 )}
               </div>
@@ -452,34 +390,41 @@ function Calculator() {
           </aside>
 
           {/* ---------- Right: Dashboard ---------- */}
-          <div className="col-span-12 space-y-8 lg:col-span-8">
-            {/* Hero Metrics */}
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-zinc-950/5 ring-1 ring-zinc-950/5 lg:grid-cols-4">
-              <MetricCell
-                label="Hourly Rate"
-                range={hasBaseline ? fmtRange(rates.hourlyLo, rates.hourlyHi) : "—"}
-                mid={hasBaseline ? `mid ${fmtUSD(rates.hourly)}` : ""}
-              />
-              <MetricCell
-                label="Day Rate (8h)"
-                range={hasBaseline ? fmtRange(rates.dailyLo, rates.dailyHi) : "—"}
-                mid={hasBaseline ? `mid ${fmtUSD(rates.daily)}` : ""}
-              />
-              <MetricCell
-                label="Weekly (5d)"
-                range={hasBaseline ? fmtRange(rates.weeklyLo, rates.weeklyHi) : "—"}
-                mid={hasBaseline ? `mid ${fmtUSD(rates.weekly)}` : ""}
-              />
-              <MetricCell
-                label="Monthly (4wk)"
-                range={hasBaseline ? fmtRange(rates.monthlyLo, rates.monthlyHi) : "—"}
-                mid={hasBaseline ? `mid ${fmtUSD(rates.monthly)}` : ""}
-              />
-            </div>
+          <div className="col-span-12 space-y-6 lg:col-span-8 xl:col-span-9">
+            {/* Rate ladder — colorful compartments */}
+            <section>
+              <SectionHeader eyebrow="Rate ladder" title="Your fractional rate range" />
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <MetricCard
+                  label="Hourly"
+                  tone="brand"
+                  range={hasBaseline ? fmtRange(rates.hourlyLo, rates.hourlyHi) : "—"}
+                  mid={hasBaseline ? `mid ${fmtUSD(rates.hourly)}` : ""}
+                />
+                <MetricCard
+                  label="Day (8h)"
+                  tone="mint"
+                  range={hasBaseline ? fmtRange(rates.dailyLo, rates.dailyHi) : "—"}
+                  mid={hasBaseline ? `mid ${fmtUSD(rates.daily)}` : ""}
+                />
+                <MetricCard
+                  label="Week (5d)"
+                  tone="blush"
+                  range={hasBaseline ? fmtRange(rates.weeklyLo, rates.weeklyHi) : "—"}
+                  mid={hasBaseline ? `mid ${fmtUSD(rates.weekly)}` : ""}
+                />
+                <MetricCard
+                  label="Month (4wk)"
+                  tone="ivory"
+                  range={hasBaseline ? fmtRange(rates.monthlyLo, rates.monthlyHi) : "—"}
+                  mid={hasBaseline ? `mid ${fmtUSD(rates.monthly)}` : ""}
+                />
+              </div>
+            </section>
 
-            {/* Fractional Packages */}
-            <div>
-              <h2 className="mb-4 text-sm font-semibold text-zinc-900">Fractional Retainers</h2>
+            {/* Retainers */}
+            <section>
+              <SectionHeader eyebrow="Retainers" title="Fractional package pricing" />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <PackageCard
                   tier="Advisory"
@@ -504,192 +449,173 @@ function Calculator() {
                   copy="Full ownership of the function during a leadership gap."
                 />
               </div>
-            </div>
+            </section>
 
             {/* Comparison + Project Estimator */}
-            <div className="grid grid-cols-1 gap-8 border-t border-zinc-950/5 pt-8 md:grid-cols-2">
-              <section>
-                <h3 className="mb-4 text-sm font-semibold text-zinc-900">FTE Comparison</h3>
-                <div className="space-y-3">
-                  <div className="flex items-end justify-between border-b border-zinc-950/5 pb-3">
-                    <span className="text-sm text-zinc-500">Annual Loaded Cost</span>
-                    <div className="text-right">
-                      <span className="block text-xs text-zinc-400 line-through">
-                        {hasBaseline ? fmtUSD(baseline.comp) : "—"}
-                      </span>
-                      <span className="font-mono text-sm font-medium tabular-nums">
-                        {hasBaseline ? fmtUSD(rates.fteLoadedAnnual) : "—"}
-                      </span>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* FTE Comparison */}
+              <section className="rounded-2xl border border-navy/10 bg-card p-5 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
+                <SectionHeader eyebrow="Comparison" title="FTE vs Fractional" compact />
+                <div className="mt-3 space-y-2">
+                  <Row label="Base comp" value={hasBaseline ? fmtUSD(baseline.comp) : "—"} />
+                  <Row label="Loaded annual (FTE)" value={hasBaseline ? fmtUSD(rates.fteLoadedAnnual) : "—"} strong />
+                  <Row label="Loaded monthly (FTE)" value={hasBaseline ? fmtUSD(rates.fteLoadedMonthly) : "—"} />
+                  <Row label="Partner tier (annualized)" value={hasBaseline ? fmtUSD(partnerAnnual) : "—"} />
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-brand px-4 py-3 text-white">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-white/80">Client saves</div>
+                      <div className="font-heading text-lg font-extrabold">{hasBaseline ? `${savingsPct}%` : "—"}</div>
                     </div>
-                  </div>
-                  <Row label="Monthly Loaded (FTE)" value={hasBaseline ? fmtUSD(rates.fteLoadedMonthly) : "—"} />
-                  <Row
-                    label="Your 2-Day Partner (annualized)"
-                    value={hasBaseline ? fmtUSD(partnerAnnual) : "—"}
-                  />
-                  <div className="-mx-2 flex justify-between rounded bg-brand-light/60 px-2 py-1">
-                    <span className="text-sm font-medium text-brand">Client Savings vs FTE</span>
-                    <span className="font-mono text-sm font-medium text-brand tabular-nums">
-                      {hasBaseline ? `${savingsPct}%` : "—"}
-                    </span>
+                    <div className="text-right text-[11px] text-white/80">
+                      vs full-time hire<br />with benefits & overhead
+                    </div>
                   </div>
                 </div>
               </section>
 
-              <section>
-                <h3 className="mb-4 text-sm font-semibold text-zinc-900">Project Estimator</h3>
-                <div className="rounded-xl bg-zinc-100/50 p-4">
-                  <div className="mb-4 flex gap-4">
-                    <div className="flex-1">
-                      <label className="mb-1 block text-[10px] font-bold uppercase text-zinc-400">
-                        Est. Hours
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={projectHours}
-                        onChange={(e) => setProjectHours(Number(e.target.value) || 0)}
-                        className="w-full rounded-lg bg-zinc-50 px-3 py-1.5 font-mono text-sm outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="mb-1 block text-[10px] font-bold uppercase text-zinc-400">
-                        Risk Buffer
-                      </label>
-                      <select
-                        value={riskBuffer}
-                        onChange={(e) => setRiskBuffer(Number(e.target.value))}
-                        className="w-full rounded-lg bg-zinc-50 px-3 py-1.5 text-sm outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
-                      >
-                        <option value={0}>0%</option>
-                        <option value={0.1}>10%</option>
-                        <option value={0.15}>15%</option>
-                        <option value={0.2}>20%</option>
-                        <option value={0.3}>30%</option>
-                      </select>
-                    </div>
+              {/* Project Estimator */}
+              <section className="rounded-2xl border border-navy/10 bg-card p-5 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
+                <SectionHeader eyebrow="Estimator" title="Project fee" compact />
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field label="Est. hours">
+                    <input
+                      type="number"
+                      min={1}
+                      value={projectHours}
+                      onChange={(e) => setProjectHours(Number(e.target.value) || 0)}
+                      className={inputCls + " font-mono"}
+                    />
+                  </Field>
+                  <Field label="Risk buffer">
+                    <select value={riskBuffer} onChange={(e) => setRiskBuffer(Number(e.target.value))} className={inputCls}>
+                      <option value={0}>0%</option>
+                      <option value={0.1}>10%</option>
+                      <option value={0.15}>15%</option>
+                      <option value={0.2}>20%</option>
+                      <option value={0.3}>30%</option>
+                    </select>
+                  </Field>
+                </div>
+                <div className="mt-4 rounded-xl bg-blush p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-rose">Project fee range</div>
+                  <div className="mt-1 font-mono text-2xl font-bold tabular-nums text-navy">
+                    {hasBaseline ? fmtRange(projectFee.lo, projectFee.hi) : "—"}
                   </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm font-medium">Project Fee</span>
-                    <div className="text-right">
-                      <span className="block font-mono text-xl font-semibold tracking-tight tabular-nums">
-                        {hasBaseline ? fmtRange(projectFee.lo, projectFee.hi) : "—"}
-                      </span>
-                      {hasBaseline && (
-                        <span className="font-mono text-[11px] text-zinc-400">
-                          mid {fmtUSD(projectFee.mid)}
-                        </span>
-                      )}
+                  {hasBaseline && (
+                    <div className="mt-1 font-mono text-[11px] text-navy/50">
+                      mid {fmtUSD(projectFee.mid)} · {projectHours} hrs × {fmtUSD(rates.hourly)} × {Math.round((1 + riskBuffer) * 100)}%
                     </div>
-                  </div>
-                  <p className="mt-2 text-[11px] text-zinc-400">
-                    {projectHours} hrs × {fmtUSD(rates.hourly)} × {Math.round((1 + riskBuffer) * 100)}% ± band
-                  </p>
+                  )}
                 </div>
               </section>
             </div>
 
             {/* Methodology */}
-            <section
-              id="methodology"
-              className="rounded-2xl bg-zinc-100/60 p-6 ring-1 ring-black/5"
-            >
-              <h3 className="mb-3 text-sm font-semibold text-zinc-900">How this is calculated</h3>
-              <ol className="grid grid-cols-1 gap-3 text-xs text-zinc-600 md:grid-cols-2">
-                <li>
-                  <span className="font-mono text-brand">01.</span> FTE baseline × ({Math.round(eff.benefitsLoad * 100)}% benefits & taxes) = loaded annual cost.
-                </li>
-                <li>
-                  <span className="font-mono text-brand">02.</span> Loaded cost × {eff.margin.toFixed(2)}× margin × (1 + {Math.round(eff.overhead * 100)}% overhead) = annual target revenue.
-                </li>
-                <li>
-                  <span className="font-mono text-brand">03.</span> Target revenue ÷ ({eff.billableWeeks} wks × 40 hrs × {Math.round(eff.utilization * 100)}%) = midpoint hourly, then a −10% / +15% band around it.
-                </li>
-                <li>
-                  <span className="font-mono text-brand">04.</span> Retainers apply volume discounts (5–15%) to reward committed cadence.
-                </li>
+            <section id="methodology" className="rounded-2xl border border-navy/10 bg-ivory-deep/60 p-6">
+              <SectionHeader eyebrow="Methodology" title="How this is calculated" compact />
+              <ol className="mt-4 grid grid-cols-1 gap-3 text-xs leading-relaxed text-navy/70 md:grid-cols-2">
+                <Step n="01" tone="brand">FTE baseline × ({Math.round(eff.benefitsLoad * 100)}% benefits & taxes) = loaded annual cost.</Step>
+                <Step n="02" tone="rose">Loaded cost × {eff.margin.toFixed(2)}× margin × (1 + {Math.round(eff.overhead * 100)}% overhead) = target revenue.</Step>
+                <Step n="03" tone="navy">Target ÷ ({eff.billableWeeks} wks × 40 hrs × {Math.round(eff.utilization * 100)}%) = midpoint hourly, ±band.</Step>
+                <Step n="04" tone="brand">Retainers apply 5–15% volume discounts to reward committed cadence.</Step>
               </ol>
             </section>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="mx-auto max-w-7xl border-t border-zinc-950/5 px-6 py-12">
-        <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div className="space-y-1">
-            <p className="text-xs text-zinc-500">
-              Directional guidance for new fractional consultants. Ballpark benchmarks, not authoritative market data.
-            </p>
-            <p className="text-xs text-zinc-400">
-              Figures include self-employment tax adjustments and overhead multipliers.
-            </p>
-          </div>
-          <div className="flex gap-8">
-            <div>
-              <span className="mb-1 block text-[10px] font-bold uppercase text-zinc-400">
-                Baseline
-              </span>
-              <span className="font-mono text-sm font-medium tabular-nums">
-                {hasBaseline ? fmtUSD(baseline.comp) : "—"}
-              </span>
-            </div>
-            <div>
-              <span className="mb-1 block text-[10px] font-bold uppercase text-zinc-400">
-                Hourly Range
-              </span>
-              <span className="font-mono text-sm font-medium tabular-nums">
-                {hasBaseline ? fmtRange(rates.hourlyLo, rates.hourlyHi) : "—"}
-              </span>
-            </div>
-          </div>
-        </div>
+      <footer className="mx-auto max-w-[1400px] border-t border-navy/10 px-6 py-8">
+        <p className="text-xs text-navy/50">
+          Directional guidance for new fractional consultants. Ballpark benchmarks, not authoritative market data.
+        </p>
       </footer>
     </div>
   );
 }
 
-// ---------- Small building blocks ----------
+// ---------- Building blocks ----------
 
-function MoneyField({
-  label, value, onChange,
-}: { label: string; value: number; onChange: (v: number) => void }) {
+const inputCls =
+  "w-full rounded-lg border border-navy/15 bg-white px-3 py-2 text-sm text-navy outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-zinc-500">{label}</label>
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">$</span>
-        <input
-          type="number"
-          min={0}
-          step={1000}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="w-full rounded-lg bg-zinc-50 py-2 pl-7 pr-3 font-mono text-sm outline-hidden ring-1 ring-black/10 focus:ring-2 focus:ring-brand"
-        />
-      </div>
+      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-navy/50">{label}</label>
+      {children}
     </div>
   );
 }
 
-function Chip({ label, value }: { label: string; value: string }) {
+function MoneyField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-50 px-2.5 py-1 text-[11px] ring-1 ring-black/5">
-      <span className="font-semibold uppercase tracking-wider text-zinc-400">{label}</span>
-      <span className="font-mono tabular-nums text-zinc-800">{value}</span>
+    <Field label={label}>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-navy/40">$</span>
+        <input
+          type="number" min={0} step={1000}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value) || 0)}
+          className={inputCls + " pl-7 font-mono"}
+        />
+      </div>
+    </Field>
+  );
+}
+
+const chipTones = {
+  mint: "bg-mint text-navy",
+  blush: "bg-blush text-navy",
+  ivory: "bg-ivory-deep text-navy",
+} as const;
+
+function Chip({ label, value, tone = "mint" }: { label: string; value: string; tone?: keyof typeof chipTones }) {
+  return (
+    <span className={"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] " + chipTones[tone]}>
+      <span className="font-bold uppercase tracking-wider opacity-60">{label}</span>
+      <span className="font-mono font-semibold tabular-nums">{value}</span>
     </span>
   );
 }
 
-function MetricCell({ label, range, mid }: { label: string; range: string; mid: string }) {
+function MiniStat({ label, value, tone }: { label: string; value: string; tone: "mint" | "blush" | "ivory" }) {
+  const bg = tone === "mint" ? "bg-mint" : tone === "blush" ? "bg-blush" : "bg-ivory-deep";
   return (
-    <div className="bg-zinc-50 p-6">
-      <span className="mb-1 block text-xs font-medium text-zinc-500">{label}</span>
-      <span className="block font-mono text-2xl font-medium tracking-tight tabular-nums">
+    <li className={"flex items-center justify-between rounded-lg px-2.5 py-1.5 " + bg}>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-navy/60">{label}</span>
+      <span className="font-mono text-xs font-bold text-navy">{value}</span>
+    </li>
+  );
+}
+
+function SectionHeader({ eyebrow, title, compact }: { eyebrow: string; title: string; compact?: boolean }) {
+  return (
+    <div className={compact ? "" : "mb-3"}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose">{eyebrow}</div>
+      <h2 className="font-heading text-lg font-extrabold tracking-tight text-navy">{title}</h2>
+    </div>
+  );
+}
+
+const metricTones = {
+  brand: "bg-brand text-white",
+  mint: "bg-mint text-navy",
+  blush: "bg-blush text-navy",
+  ivory: "bg-ivory-deep text-navy",
+} as const;
+
+function MetricCard({ label, range, mid, tone }: { label: string; range: string; mid: string; tone: keyof typeof metricTones }) {
+  const dark = tone === "brand";
+  return (
+    <div className={"rounded-2xl p-4 shadow-[0_1px_2px_rgba(27,42,74,0.05)] " + metricTones[tone]}>
+      <div className={"text-[10px] font-bold uppercase tracking-[0.18em] " + (dark ? "text-white/80" : "text-navy/50")}>
+        {label}
+      </div>
+      <div className="mt-2 font-mono text-xl font-bold tabular-nums leading-tight">
         {range}
-      </span>
+      </div>
       {mid && (
-        <span className="mt-1 block font-mono text-[11px] text-zinc-400">{mid}</span>
+        <div className={"mt-1 font-mono text-[10px] " + (dark ? "text-white/70" : "text-navy/50")}>{mid}</div>
       )}
     </div>
   );
@@ -703,56 +629,61 @@ function PackageCard({
   return (
     <div
       className={
-        "flex h-52 flex-col justify-between rounded-xl p-5 " +
+        "relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all " +
         (featured
-          ? "bg-brand text-zinc-50 shadow-lg ring-1 ring-brand"
-          : "bg-zinc-50 ring-1 ring-black/5")
+          ? "bg-navy text-white shadow-xl ring-2 ring-brand"
+          : "border border-navy/10 bg-card text-navy shadow-[0_1px_2px_rgba(27,42,74,0.05)]")
       }
     >
+      {featured && (
+        <span className="absolute right-3 top-3 rounded-full bg-brand px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-white">
+          Recommended
+        </span>
+      )}
       <div>
-        <div className="flex items-start justify-between">
-          <span
-            className={
-              "text-xs font-bold uppercase tracking-widest " +
-              (featured ? "text-brand-light" : "text-brand")
-            }
-          >
+        <div className="flex items-center gap-2">
+          <span className={"size-1.5 rounded-full " + (featured ? "bg-brand" : "bg-rose")} />
+          <span className={"text-[10px] font-bold uppercase tracking-[0.2em] " + (featured ? "text-brand" : "text-rose")}>
             {tier}
           </span>
-          <span className={"text-xs " + (featured ? "text-brand-light/70" : "text-zinc-400")}>
-            {cadence}
-          </span>
         </div>
+        <div className={"mt-1 text-xs " + (featured ? "text-white/60" : "text-navy/50")}>{cadence}</div>
         <div className="mt-4">
-          <span className="font-mono text-2xl font-medium tabular-nums">{price}</span>
-          <span className={"text-xs " + (featured ? "text-brand-light/70" : "text-zinc-500")}>
-            {" "}/month
-          </span>
+          <span className="font-mono text-2xl font-bold tabular-nums">{price}</span>
+          <span className={"text-xs " + (featured ? "text-white/60" : "text-navy/50")}> /mo</span>
           {range && (
-            <div className={"mt-1 font-mono text-[11px] tabular-nums " + (featured ? "text-brand-light/70" : "text-zinc-400")}>
+            <div className={"mt-1 font-mono text-[10px] tabular-nums " + (featured ? "text-white/50" : "text-navy/40")}>
               {range}
             </div>
           )}
         </div>
       </div>
-      <p
-        className={
-          "text-pretty text-xs leading-relaxed " +
-          (featured ? "text-brand-light/80" : "text-zinc-500")
-        }
-      >
+      <p className={"mt-4 text-xs leading-relaxed " + (featured ? "text-white/70" : "text-navy/60")}>
         {copy}
       </p>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex justify-between py-1">
-      <span className="text-sm text-zinc-500">{label}</span>
-      <span className="font-mono text-sm tabular-nums">{value}</span>
+    <div className="flex justify-between border-b border-navy/5 py-1.5 last:border-0">
+      <span className="text-xs text-navy/60">{label}</span>
+      <span className={"font-mono text-sm tabular-nums " + (strong ? "font-bold text-navy" : "text-navy/80")}>{value}</span>
     </div>
+  );
+}
+
+const stepTones = { brand: "bg-brand text-white", rose: "bg-rose text-white", navy: "bg-navy text-white" } as const;
+
+function Step({ n, tone, children }: { n: string; tone: keyof typeof stepTones; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span className={"inline-flex size-6 shrink-0 items-center justify-center rounded-md font-mono text-[10px] font-bold " + stepTones[tone]}>
+        {n}
+      </span>
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -766,24 +697,17 @@ function Lever({
   return (
     <div>
       <div className="mb-1 flex justify-between">
-        <label className="text-xs text-zinc-500">{label}</label>
-        <span className="font-mono text-xs font-medium tabular-nums">{format(value)}</span>
+        <label className="text-[11px] font-medium text-navy/70">{label}</label>
+        <span className="font-mono text-[11px] font-bold tabular-nums text-navy">{format(value)}</span>
       </div>
-      <div className="h-1 rounded-full bg-zinc-200">
-        <div
-          className="h-full rounded-full bg-brand"
-          style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
-        />
+      <div className="relative h-1.5 rounded-full bg-ivory-deep">
+        <div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
       </div>
       <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
+        type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={label}
-        className="mt-2 block w-full accent-[color:var(--color-brand)]"
+        className="mt-1 block w-full accent-[color:var(--color-brand)]"
       />
     </div>
   );

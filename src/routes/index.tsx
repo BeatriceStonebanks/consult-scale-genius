@@ -2,9 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { suggestPackages, type SuggestedPackage, type SuggestPackagesResult } from "@/lib/pricing-ai.functions";
+import { requireUnlocked } from "@/lib/gate.functions";
 
 
 export const Route = createFileRoute("/")({
+  loader: () => requireUnlocked(),
   component: Calculator,
 });
 

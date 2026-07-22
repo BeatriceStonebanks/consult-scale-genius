@@ -19,7 +19,6 @@ export const Route = createFileRoute("/unlock")({
 });
 
 function Unlock() {
-  const router = useRouter();
   const unlock = useServerFn(unlockSite);
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
@@ -29,12 +28,16 @@ function Unlock() {
     setPending(true);
     setError(false);
     const password = new FormData(e.currentTarget).get("password") as string;
-    const { ok } = await unlock({ data: { password } });
-    if (ok) {
-      await router.invalidate();
-      await router.navigate({ to: "/" });
-    } else {
+    try {
+      const { ok } = await unlock({ data: { password } });
+      if (ok) {
+        window.location.href = "/";
+        return;
+      }
       setError(true);
+    } catch {
+      setError(true);
+    } finally {
       setPending(false);
     }
   }

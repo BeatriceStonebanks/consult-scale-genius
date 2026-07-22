@@ -37,7 +37,7 @@ export type SuggestPackagesResponse =
   | { ok: false; error: string };
 
 export const suggestPackages = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => SuggestPackagesInputSchema.parse(input))
+  .validator((input: unknown) => SuggestPackagesInputSchema.parse(input))
   .handler(async ({ data }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) {

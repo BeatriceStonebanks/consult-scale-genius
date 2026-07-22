@@ -491,7 +491,66 @@ function Calculator() {
               </div>
             </section>
 
+            {/* AI Package Designer */}
+            <section className="rounded-2xl border border-navy/10 bg-card p-5 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose">AI Package Designer</div>
+                  <h2 className="font-heading text-lg font-extrabold tracking-tight text-navy">Design a custom package</h2>
+                  <p className="mt-1 max-w-xl text-xs text-navy/60">
+                    Tell us your goal — e.g., “I want $10k/month” or “2 days a week with a startup” — and AI will build a package using your calculated rates.
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand">
+                  <SparkleIcon className="size-3.5" />
+                  Powered by Lovable AI
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-3 md:flex-row">
+                <textarea
+                  value={packageGoal}
+                  onChange={(e) => setPackageGoal(e.target.value)}
+                  rows={2}
+                  placeholder="I want to land $12k/month with a Series B SaaS company..."
+                  className={inputCls + " flex-1 leading-relaxed"}
+                />
+                <button
+                  onClick={handleDesignPackages}
+                  disabled={!hasBaseline || !packageGoal.trim() || aiLoading}
+                  className={
+                    "shrink-0 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all " +
+                    (hasBaseline && packageGoal.trim() && !aiLoading
+                      ? "bg-navy text-white shadow-md hover:bg-navy-light"
+                      : "cursor-not-allowed bg-navy/30 text-white")
+                  }
+                >
+                  {aiLoading ? "Designing..." : "Design package"}
+                </button>
+              </div>
+
+              {aiError && (
+                <div className="mt-4 rounded-xl bg-rose-light px-4 py-3 text-xs text-rose">
+                  {aiError}
+                </div>
+              )}
+
+              {aiPackages && (
+                <div className="mt-5 space-y-4">
+                  {aiPackages.summary && (
+                    <p className="text-sm leading-relaxed text-navy/70">{aiPackages.summary}</p>
+                  )}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {aiPackages.packages.map((pkg, idx) => (
+                      <AiPackageCard key={idx} pkg={pkg} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
             {/* Comparison + Project Estimator */}
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* FTE Comparison */}
               <section className="rounded-2xl border border-navy/10 bg-card p-5 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">

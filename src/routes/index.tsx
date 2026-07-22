@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
+import { suggestPackages, type SuggestedPackage, type SuggestPackagesResult } from "@/lib/pricing-ai.functions";
+
 
 export const Route = createFileRoute("/")({
   component: Calculator,
@@ -133,6 +136,14 @@ function Calculator() {
   const [projectHours, setProjectHours] = useState<number>(40);
   const [riskBuffer, setRiskBuffer] = useState<number>(0.15);
 
+  const [packageGoal, setPackageGoal] = useState<string>("");
+  const [aiPackages, setAiPackages] = useState<SuggestPackagesResult | null>(null);
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const suggestPackagesFn = useServerFn(suggestPackages);
+
+
   const jdEst = useMemo(() => estimateFromJD(jdText), [jdText]);
 
   const baseline = useMemo(() => {
@@ -212,7 +223,36 @@ function Calculator() {
 
   const hasBaseline = baseline.comp > 0;
 
+  async function handleDesignPackages() {
+    if (!hasBaseline || !packageGoal.trim()) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiPackages(null);
+    try {
+      const result = await suggestPackagesFn({
+        data: {
+          baselineComp: baseline.comp,
+          hourlyMid: rates.hourly,
+          hourlyLo: rates.hourlyLo,
+          hourlyHi: rates.hourlyHi,
+          dailyMid: rates.daily,
+          goal: packageGoal.trim(),
+        },
+      });
+      if (result.ok) {
+        setAiPackages(result.output);
+      } else {
+        setAiError(result.error);
+      }
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
+
     <div className="min-h-screen bg-background font-sans text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-navy/10 bg-ivory/85 backdrop-blur-md">
@@ -451,7 +491,66 @@ function Calculator() {
               </div>
             </section>
 
+            {/* AI Package Designer */}
+            <section className="rounded-2xl border border-navy/10 bg-card p-5 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose">AI Package Designer</div>
+                  <h2 className="font-heading text-lg font-extrabold tracking-tight text-navy">Design a custom package</h2>
+                  <p className="mt-1 max-w-xl text-xs text-navy/60">
+                    Tell us your goal — e.g., “I want $10k/month” or “2 days a week with a startup” — and AI will build a package using your calculated rates.
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand">
+                  <SparkleIcon className="size-3.5" />
+                  Powered by Lovable AI
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-3 md:flex-row">
+                <textarea
+                  value={packageGoal}
+                  onChange={(e) => setPackageGoal(e.target.value)}
+                  rows={2}
+                  placeholder="I want to land $12k/month with a Series B SaaS company..."
+                  className={inputCls + " flex-1 leading-relaxed"}
+                />
+                <button
+                  onClick={handleDesignPackages}
+                  disabled={!hasBaseline || !packageGoal.trim() || aiLoading}
+                  className={
+                    "shrink-0 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all " +
+                    (hasBaseline && packageGoal.trim() && !aiLoading
+                      ? "bg-navy text-white shadow-md hover:bg-navy-light"
+                      : "cursor-not-allowed bg-navy/30 text-white")
+                  }
+                >
+                  {aiLoading ? "Designing..." : "Design package"}
+                </button>
+              </div>
+
+              {aiError && (
+                <div className="mt-4 rounded-xl bg-rose-light px-4 py-3 text-xs text-rose">
+                  {aiError}
+                </div>
+              )}
+
+              {aiPackages && (
+                <div className="mt-5 space-y-4">
+                  {aiPackages.summary && (
+                    <p className="text-sm leading-relaxed text-navy/70">{aiPackages.summary}</p>
+                  )}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {aiPackages.packages.map((pkg, idx) => (
+                      <AiPackageCard key={idx} pkg={pkg} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
             {/* Comparison + Project Estimator */}
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* FTE Comparison */}
               <section className="rounded-2xl border border-navy/10 bg-card p-5 shadow-[0_1px_2px_rgba(27,42,74,0.05)]">
@@ -712,3 +811,57 @@ function Lever({
     </div>
   );
 }
+
+function SparkleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+    </svg>
+  );
+}
+
+function AiPackageCard({ pkg }: { pkg: SuggestedPackage }) {
+  return (
+    <div className="flex flex-col justify-between rounded-2xl border border-navy/10 bg-ivory-deep/50 p-5">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="size-1.5 rounded-full bg-brand" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand">{pkg.name}</span>
+        </div>
+        <div className="mt-1 text-xs text-navy/60">{pkg.cadence}</div>
+        <div className="mt-4">
+          <span className="font-mono text-2xl font-bold tabular-nums text-navy">{fmtUSD(pkg.monthlyFee)}</span>
+          <span className="text-xs text-navy/50"> /mo</span>
+        </div>
+        <div className="mt-3 space-y-1 text-[11px] text-navy/60">
+          <div className="flex justify-between">
+            <span>Days/mo</span>
+            <span className="font-mono font-semibold text-navy">{pkg.daysPerMonth}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Hours/mo</span>
+            <span className="font-mono font-semibold text-navy">{pkg.hoursPerMonth}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Annualized</span>
+            <span className="font-mono font-semibold text-navy">{fmtUSD(pkg.annualizedFee)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        <p className="text-[11px] leading-relaxed text-navy/70">
+          <span className="font-semibold text-navy">Rationale:</span> {pkg.rationale}
+        </p>
+        <p className="text-[11px] leading-relaxed text-navy/70">
+          <span className="font-semibold text-navy">Ideal for:</span> {pkg.idealFor}
+        </p>
+      </div>
+    </div>
+  );
+}
+

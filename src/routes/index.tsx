@@ -1,12 +1,10 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { suggestPackages, type SuggestedPackage, type SuggestPackagesResult } from "@/lib/pricing-ai.functions";
-import { requireUnlocked, lockSite } from "@/lib/gate.functions";
 
 
 export const Route = createFileRoute("/")({
-  loader: () => requireUnlocked(),
   component: Calculator,
 });
 
@@ -271,7 +269,6 @@ function Calculator() {
           <nav className="hidden items-center gap-1 md:flex">
             <a href="#calculator" className="rounded-md px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-mint hover:text-navy">Calculator</a>
             <a href="#methodology" className="rounded-md px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-mint hover:text-navy">Methodology</a>
-            <LockButton />
           </nav>
         </div>
       </header>
@@ -687,30 +684,6 @@ function MiniStat({ label, value, tone }: { label: string; value: string; tone: 
       <span className="text-[10px] font-semibold uppercase tracking-wider text-navy/60">{label}</span>
       <span className="font-mono text-xs font-bold text-navy">{value}</span>
     </li>
-  );
-}
-
-function LockButton() {
-  const router = useRouter();
-  const lock = useServerFn(lockSite);
-  const [busy, setBusy] = useState(false);
-  return (
-    <button
-      onClick={async () => {
-        setBusy(true);
-        try {
-          await lock();
-          await router.navigate({ to: "/unlock" });
-          router.invalidate();
-        } finally {
-          setBusy(false);
-        }
-      }}
-      disabled={busy}
-      className="ml-2 rounded-md border border-navy/15 px-3 py-1.5 text-sm font-medium text-navy/70 transition-colors hover:bg-navy hover:text-ivory disabled:opacity-50"
-    >
-      {busy ? "Locking…" : "Lock"}
-    </button>
   );
 }
 

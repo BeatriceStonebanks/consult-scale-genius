@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { unlockSite, checkUnlocked } from "@/lib/gate.functions";

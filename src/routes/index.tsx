@@ -223,7 +223,36 @@ function Calculator() {
 
   const hasBaseline = baseline.comp > 0;
 
+  async function handleDesignPackages() {
+    if (!hasBaseline || !packageGoal.trim()) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiPackages(null);
+    try {
+      const result = await suggestPackagesFn({
+        data: {
+          baselineComp: baseline.comp,
+          hourlyMid: rates.hourly,
+          hourlyLo: rates.hourlyLo,
+          hourlyHi: rates.hourlyHi,
+          dailyMid: rates.daily,
+          goal: packageGoal.trim(),
+        },
+      });
+      if (result.ok) {
+        setAiPackages(result.output);
+      } else {
+        setAiError(result.error);
+      }
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
+
     <div className="min-h-screen bg-background font-sans text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-navy/10 bg-ivory/85 backdrop-blur-md">
